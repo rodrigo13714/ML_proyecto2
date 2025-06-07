@@ -9,7 +9,7 @@ st.title("🎬 Recomendador de Películas por Póster")
 # === Cargar datos ===
 @st.cache_data
 def load_data():
-    return pd.read_csv("recomendaciones_completo")
+    return pd.read_csv("recomendaciones_completo.csv")
 
 df = load_data()
 
