@@ -3,65 +3,57 @@ import pandas as pd
 import os
 from PIL import Image
 
-# Cargar datos
+st.set_page_config(page_title="Recomendador de Películas", layout="wide")
+
+# ==== Cargar datos ====
 @st.cache_data
 def load_data():
-    df = pd.read_csv("recomendacion_completo_con_train_test.csv")
+    df = pd.read_csv("recomendaciones_completo.csv")
     return df
 
 df = load_data()
 
-# Obtener lista única de películas query para autocompletar
-peliculas_query = df[['query_movie_id', 'title_test']].drop_duplicates().reset_index(drop=True)
+# === Interfaz de selección ===
+st.title("🎬 Recomendador de Películas por Similitud Visual")
+st.markdown("Selecciona una película del set de prueba para ver recomendaciones basadas en pósters.")
 
-# Buscador interactivo con autocompletado (usamos st.selectbox)
-st.title("🎬 Bienvenido al Recomendador de Películas con Machine Learning")
+peliculas_unicas = df[['query_movie_id']].drop_duplicates().reset_index(drop=True)
+df_test_info = df[['query_movie_id', 'title', 'genre']].drop_duplicates('query_movie_id')
+titulo_default = df_test_info.iloc[0]['title']
 
-st.write("Busca y selecciona una película para ver recomendaciones:")
-
-# Lista de títulos para seleccionar (puedes filtrar más abajo con texto si quieres)
 pelicula_seleccionada = st.selectbox(
-    "Selecciona la película",
-    peliculas_query['title_test'].tolist()
+    "🎞️ Película de consulta:",
+    df_test_info['title'].tolist(),
+    index=0
 )
 
-# Mostrar info básica de la película seleccionada
-if pelicula_seleccionada:
-    info_pelicula = peliculas_query[peliculas_query['title_test'] == pelicula_seleccionada].iloc[0]
-    st.markdown(f"**Título:** {info_pelicula['title_test']}")
-    st.markdown(f"**Movie ID:** {info_pelicula['query_movie_id']}")
+# === Mostrar info película seleccionada ===
+info = df_test_info[df_test_info['title'] == pelicula_seleccionada].iloc[0]
+query_id = info['query_movie_id']
+st.subheader(f"🎥 Película seleccionada: {pelicula_seleccionada}")
+st.write(f"**ID:** {query_id}")
+st.write(f"**Género:** {info['genre']}")
 
-
-
-def mostrar_poster(movie_id, carpeta, width=150):
-    ruta_poster = os.path.join(carpeta, f"{movie_id}.jpg")
-    if os.path.exists(ruta_poster):
-        img = Image.open(ruta_poster)
+# === Función para mostrar poster ===
+def mostrar_poster(movie_id, carpeta='posters', width=150):
+    path = os.path.join(carpeta, f"{movie_id}.jpg")
+    if os.path.exists(path):
+        img = Image.open(path)
         st.image(img, width=width)
     else:
-        st.write("Poster no disponible")
+        st.write("📭 Póster no disponible")
 
-# Tras seleccionar la película:
-if pelicula_seleccionada:
-    info_pelicula = peliculas_query[peliculas_query['title_test'] == pelicula_seleccionada].iloc[0]
-    query_id = info_pelicula['query_movie_id']
+# === Mostrar póster de película seleccionada ===
+st.markdown("#### 🖼️ Póster de la película")
+mostrar_poster(query_id, carpeta='posters_test', width=250)
 
-    st.markdown("### 🎥 Película seleccionada")
-    st.write(f"**Título:** {pelicula_seleccionada}")
-    st.write(f"**ID:** {query_id}")
-    mostrar_poster(query_id, "posters_test", width=200)
+# === Mostrar recomendaciones ===
+st.markdown("### ✅ Películas Recomendadas")
+recomendaciones = df[df['query_movie_id'] == query_id].sort_values('position')
 
-    # Filtrar recomendaciones ordenadas por posición para esta película
-    recomendaciones = df[(df['query_movie_id'] == query_id)].sort_values('position')
-
-    st.markdown("### 🍿 Recomendaciones")
-
-    # Mostrar en columnas los posters y títulos de las recomendadas
-    cols = st.columns(5)
-    for idx, (_, row) in enumerate(recomendaciones.iterrows()):
-        col = cols[idx % 5]
-        with col:
-            mostrar_poster(row['recommended_movie_id'], "posters", width=120)
-            col.write(f"**{row['title_train']}**")
-            col.write(f"{row['genre_train']} | {int(row['year_train']) if not pd.isna(row['year_train']) else 'N/A'}")
-            col.write(f"Pos: {row['position']}")
+cols = st.columns(5)
+for idx, (_, row) in enumerate(recomendaciones.iterrows()):
+    with cols[idx % 5]:
+        mostrar_poster(row['recommended_movie_id'], carpeta='posters', width=120)
+        st.markdown(f"**🎬 {row['title']}**")
+        st.caption(f"📚 {row['genre']} | Pos: {row['position']}")
