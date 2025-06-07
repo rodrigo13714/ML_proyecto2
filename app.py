@@ -9,7 +9,7 @@ st.title("🎬 Recomendador de Películas Basado en Pósters")
 # === Cargar CSV limpio ===
 @st.cache_data
 def load_data():
-    return pd.read_csv("recomendaciones_completo_sin_columna_extra.csv")
+    return pd.read_csv("Recomendaciones_Limpio.csv")
 
 df = load_data()
 
