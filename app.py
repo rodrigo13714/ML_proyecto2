@@ -3,57 +3,57 @@ import pandas as pd
 import os
 from PIL import Image
 
-st.set_page_config(page_title="Recomendador de Películas", layout="wide")
+st.set_page_config(layout="wide")
+st.title("🎬 Recomendador de Películas por Póster")
 
-# ==== Cargar datos ====
+# === Cargar datos ===
 @st.cache_data
 def load_data():
-    df = pd.read_csv("recomendaciones_completo.csv")
-    return df
+    return pd.read_csv("peliculas_recomendacion_completo.csv")
 
 df = load_data()
 
-# === Interfaz de selección ===
-st.title("🎬 Recomendador de Películas por Similitud Visual")
-st.markdown("Selecciona una película del set de prueba para ver recomendaciones basadas en pósters.")
-
-peliculas_unicas = df[['query_movie_id']].drop_duplicates().reset_index(drop=True)
-df_test_info = df[['query_movie_id', 'title', 'genre']].drop_duplicates('query_movie_id')
-titulo_default = df_test_info.iloc[0]['title']
+# === Lista única de películas para seleccionar ===
+peliculas_query = df[['query_movie_id', 'title_test']].drop_duplicates().sort_values('title_test')
 
 pelicula_seleccionada = st.selectbox(
-    "🎞️ Película de consulta:",
-    df_test_info['title'].tolist(),
-    index=0
+    "Selecciona una película para ver sus recomendaciones:",
+    peliculas_query['title_test'].tolist()
 )
 
-# === Mostrar info película seleccionada ===
-info = df_test_info[df_test_info['title'] == pelicula_seleccionada].iloc[0]
-query_id = info['query_movie_id']
-st.subheader(f"🎥 Película seleccionada: {pelicula_seleccionada}")
-st.write(f"**ID:** {query_id}")
-st.write(f"**Género:** {info['genre']}")
-
-# === Función para mostrar poster ===
-def mostrar_poster(movie_id, carpeta='posters', width=150):
-    path = os.path.join(carpeta, f"{movie_id}.jpg")
-    if os.path.exists(path):
-        img = Image.open(path)
+def mostrar_poster(movie_id, carpeta, width=150):
+    ruta = os.path.join(carpeta, f"{movie_id}.jpg")
+    if os.path.exists(ruta):
+        img = Image.open(ruta)
         st.image(img, width=width)
     else:
         st.write("📭 Póster no disponible")
 
-# === Mostrar póster de película seleccionada ===
-st.markdown("#### 🖼️ Póster de la película")
-mostrar_poster(query_id, carpeta='posters_test', width=250)
+# === Mostrar información y recomendaciones ===
+if pelicula_seleccionada:
+    info = peliculas_query[peliculas_query['title_test'] == pelicula_seleccionada].iloc[0]
+    query_id = info['query_movie_id']
 
-# === Mostrar recomendaciones ===
-st.markdown("### ✅ Películas Recomendadas")
-recomendaciones = df[df['query_movie_id'] == query_id].sort_values('position')
+    st.subheader("🎥 Película Seleccionada")
+    mostrar_poster(query_id, "posters_test", width=250)
 
-cols = st.columns(5)
-for idx, (_, row) in enumerate(recomendaciones.iterrows()):
-    with cols[idx % 5]:
-        mostrar_poster(row['recommended_movie_id'], carpeta='posters', width=120)
-        st.markdown(f"**🎬 {row['title']}**")
-        st.caption(f"📚 {row['genre']} | Pos: {row['position']}")
+    info_peli = df[df['query_movie_id'] == query_id].iloc[0]
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"**Título:** {info_peli['title_test']}")
+        st.markdown(f"**Género:** {info_peli['genre_test']}")
+    with col2:
+        st.markdown(f"**Año:** {int(info_peli['year_test']) if not pd.isna(info_peli['year_test']) else 'N/A'}")
+        st.markdown(f"**Votos:** {int(info_peli['vote_test']) if not pd.isna(info_peli['vote_test']) else 'N/A'}")
+
+    st.subheader("🍿 Recomendaciones")
+    recomendaciones = df[df['query_movie_id'] == query_id].sort_values('position')
+
+    cols = st.columns(5)
+    for idx, (_, row) in enumerate(recomendaciones.iterrows()):
+        col = cols[idx % 5]
+        with col:
+            mostrar_poster(row['recommended_movie_id'], "posters", width=120)
+            st.markdown(f"**{row['title_train']}**")
+            st.caption(f"{row['genre_train']} ({int(row['year_train']) if not pd.isna(row['year_train']) else 'N/A'})")
+            st.caption(f"⭐ Votos: {int(row['vote_train']) if not pd.isna(row['vote_train']) else 'N/A'}")
