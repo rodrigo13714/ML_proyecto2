@@ -12,7 +12,7 @@ def load_data():
 df = load_data()
 
 # Obtener lista única de películas query para autocompletar
-peliculas_query = df[['query_movie_id', 'title_test']].drop_duplicates().reset_index(drop=True)
+peliculas_query = df[['query_movie_id', 'title']].drop_duplicates().reset_index(drop=True)
 
 # Buscador interactivo con autocompletado (usamos st.selectbox)
 st.title("🎬 Bienvenido al Recomendador de Películas con Machine Learning")
@@ -22,13 +22,13 @@ st.write("Busca y selecciona una película para ver recomendaciones:")
 # Lista de títulos para seleccionar (puedes filtrar más abajo con texto si quieres)
 pelicula_seleccionada = st.selectbox(
     "Selecciona la película",
-    peliculas_query['title_test'].tolist()
+    peliculas_query['title'].tolist()
 )
 
 # Mostrar info básica de la película seleccionada
 if pelicula_seleccionada:
-    info_pelicula = peliculas_query[peliculas_query['title_test'] == pelicula_seleccionada].iloc[0]
-    st.markdown(f"**Título:** {info_pelicula['title_test']}")
+    info_pelicula = peliculas_query[peliculas_query['title'] == pelicula_seleccionada].iloc[0]
+    st.markdown(f"**Título:** {info_pelicula['title']}")
     st.markdown(f"**Movie ID:** {info_pelicula['query_movie_id']}")
 
 
@@ -43,7 +43,7 @@ def mostrar_poster(movie_id, carpeta, width=150):
 
 # Tras seleccionar la película:
 if pelicula_seleccionada:
-    info_pelicula = peliculas_query[peliculas_query['title_test'] == pelicula_seleccionada].iloc[0]
+    info_pelicula = peliculas_query[peliculas_query['title'] == pelicula_seleccionada].iloc[0]
     query_id = info_pelicula['query_movie_id']
 
     st.markdown("### 🎥 Película seleccionada")
@@ -62,6 +62,6 @@ if pelicula_seleccionada:
         col = cols[idx % 5]
         with col:
             mostrar_poster(row['recommended_movie_id'], "posters", width=120)
-            col.write(f"**{row['title_train']}**")
-            col.write(f"{row['genre_train']} | {int(row['year_train']) if not pd.isna(row['year_train']) else 'N/A'}")
+            col.write(f"**{row['title']}**")
+            col.write(f"{row['genre']} | {int(row['year_train']) if not pd.isna(row['year_train']) else 'N/A'}")
             col.write(f"Pos: {row['position']}")
