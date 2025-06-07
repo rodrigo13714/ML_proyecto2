@@ -3,48 +3,65 @@ import pandas as pd
 import os
 from PIL import Image
 
-st.set_page_config(page_title="Recomendador Visual", layout="wide")
-st.title("🎬 Recomendador de Películas Basado en Pósters")
-
-# === Cargar CSV limpio ===
+# Cargar datos
 @st.cache_data
 def load_data():
-    return pd.read_csv("Recomendaciones_Limpio.csv")
+    df = pd.read_csv("Recomendaciones_Limpio.csv")
+    return df
 
 df = load_data()
 
-# === Obtener lista única de películas de entrada ===
-peliculas_unicas = df['query_movie_id'].drop_duplicates().sort_values().tolist()
+# Obtener lista única de películas query para autocompletar
+peliculas_query = df[['query_movie_id', 'title_test']].drop_duplicates().reset_index(drop=True)
 
-# === Selector de película por ID ===
-selected_id = st.selectbox("Selecciona una película por ID:", peliculas_unicas)
+# Buscador interactivo con autocompletado (usamos st.selectbox)
+st.title("🎬 Bienvenido al Recomendador de Películas con Machine Learning")
 
-# === Mostrar póster de la película seleccionada (si existe) ===
-st.subheader("🎥 Película seleccionada")
-st.markdown(f"**Movie ID:** `{selected_id}`")
-poster_path = f"posters_test/{selected_id}.jpg"
-if os.path.exists(poster_path):
-    st.image(Image.open(poster_path), width=250)
-else:
-    st.warning("📭 Póster de esta película no encontrado en posters_test/")
+st.write("Busca y selecciona una película para ver recomendaciones:")
 
-# === Obtener recomendaciones ===
-st.subheader("🍿 Películas Recomendadas")
-recomendaciones = df[df['query_movie_id'] == selected_id].sort_values('position')
+# Lista de títulos para seleccionar (puedes filtrar más abajo con texto si quieres)
+pelicula_seleccionada = st.selectbox(
+    "Selecciona la película",
+    peliculas_query['title_test'].tolist()
+)
 
-cols = st.columns(5)
-for idx, (_, row) in enumerate(recomendaciones.iterrows()):
-    col = cols[idx % 5]
-    with col:
-        rec_id = row['recommended_movie_id']
-        rec_title = row['title']
-        rec_genre = row['genre']
-        poster_rec_path = f"posters/{rec_id}.jpg"
+# Mostrar info básica de la película seleccionada
+if pelicula_seleccionada:
+    info_pelicula = peliculas_query[peliculas_query['title_test'] == pelicula_seleccionada].iloc[0]
+    st.markdown(f"**Título:** {info_pelicula['title_test']}")
+    st.markdown(f"**Movie ID:** {info_pelicula['query_movie_id']}")
 
-        if os.path.exists(poster_rec_path):
-            col.image(Image.open(poster_rec_path), width=120)
-        else:
-            col.caption("📭 Sin póster")
-        
-        col.markdown(f"**{rec_title}**")
-        col.caption(f"🎭 {rec_genre}")
+
+
+def mostrar_poster(movie_id, carpeta, width=150):
+    ruta_poster = os.path.join(carpeta, f"{movie_id}.jpg")
+    if os.path.exists(ruta_poster):
+        img = Image.open(ruta_poster)
+        st.image(img, width=width)
+    else:
+        st.write("Poster no disponible")
+
+# Tras seleccionar la película:
+if pelicula_seleccionada:
+    info_pelicula = peliculas_query[peliculas_query['title_test'] == pelicula_seleccionada].iloc[0]
+    query_id = info_pelicula['query_movie_id']
+
+    st.markdown("### 🎥 Película seleccionada")
+    st.write(f"**Título:** {pelicula_seleccionada}")
+    st.write(f"**ID:** {query_id}")
+    mostrar_poster(query_id, "posters_test", width=200)
+
+    # Filtrar recomendaciones ordenadas por posición para esta película
+    recomendaciones = df[(df['query_movie_id'] == query_id)].sort_values('position')
+
+    st.markdown("### 🍿 Recomendaciones")
+
+    # Mostrar en columnas los posters y títulos de las recomendadas
+    cols = st.columns(5)
+    for idx, (_, row) in enumerate(recomendaciones.iterrows()):
+        col = cols[idx % 5]
+        with col:
+            mostrar_poster(row['recommended_movie_id'], "posters", width=120)
+            col.write(f"**{row['title_train']}**")
+            col.write(f"{row['genre_train']} | {int(row['year_train']) if not pd.isna(row['year_train']) else 'N/A'}")
+            col.write(f"Pos: {row['position']}")
