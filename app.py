@@ -14,11 +14,11 @@ def load_data():
 df = load_data()
 
 # === Lista única de películas para seleccionar ===
-peliculas_query = df[['query_movie_id', 'title_test']].drop_duplicates().sort_values('title_test')
+peliculas_query = df[['query_movie_id', 'title']].drop_duplicates().sort_values('title')
 
 pelicula_seleccionada = st.selectbox(
     "Selecciona una película para ver sus recomendaciones:",
-    peliculas_query['title_test'].tolist()
+    peliculas_query['title'].tolist()
 )
 
 def mostrar_poster(movie_id, carpeta, width=150):
@@ -31,7 +31,7 @@ def mostrar_poster(movie_id, carpeta, width=150):
 
 # === Mostrar información y recomendaciones ===
 if pelicula_seleccionada:
-    info = peliculas_query[peliculas_query['title_test'] == pelicula_seleccionada].iloc[0]
+    info = peliculas_query[peliculas_query['title'] == pelicula_seleccionada].iloc[0]
     query_id = info['query_movie_id']
 
     st.subheader("🎥 Película Seleccionada")
@@ -40,8 +40,8 @@ if pelicula_seleccionada:
     info_peli = df[df['query_movie_id'] == query_id].iloc[0]
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown(f"**Título:** {info_peli['title_test']}")
-        st.markdown(f"**Género:** {info_peli['genre_test']}")
+        st.markdown(f"**Título:** {info_peli['title']}")
+        st.markdown(f"**Género:** {info_peli['genre']}")
     with col2:
         st.markdown(f"**Año:** {int(info_peli['year_test']) if not pd.isna(info_peli['year_test']) else 'N/A'}")
         st.markdown(f"**Votos:** {int(info_peli['vote_test']) if not pd.isna(info_peli['vote_test']) else 'N/A'}")
