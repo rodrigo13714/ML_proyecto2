@@ -1,54 +1,38 @@
+import streamlit as st
 import pandas as pd
 import os
 from PIL import Image
-import streamlit as st
 
-# Configuración de la página
-st.set_page_config(page_title="🎬 Recomendador Visual de Películas", layout="wide")
+st.set_page_config(page_title="Recomendador Visual", layout="wide")
+st.title("🎬 Recomendador de Películas Basado en Pósters")
 
-# Título principal
-st.title("🎬 Recomendador Visual de Películas")
-st.markdown("Selecciona una película y descubre 10 recomendaciones visualmente similares basadas en pósters.")
-
-# Cargar los datos
+# === Cargar CSV limpio ===
 @st.cache_data
 def load_data():
     return pd.read_csv("Recomendaciones_Limpio.csv")
 
 df = load_data()
 
-# Obtener lista única de películas de entrada
-peliculas_unicas = df[['query_movie_id', 'title']].drop_duplicates().sort_values('title')
-peliculas_dict = dict(zip(peliculas_unicas['title'], peliculas_unicas['query_movie_id']))
+# === Obtener lista única de películas de entrada ===
+peliculas_unicas = df['query_movie_id'].drop_duplicates().sort_values().tolist()
 
-# Selector de película
-selected_title = st.selectbox("🎞️ Escoge una película:", list(peliculas_dict.keys()))
-selected_id = peliculas_dict[selected_title]
+# === Selector de película por ID ===
+selected_id = st.selectbox("Selecciona una película por ID:", peliculas_unicas)
 
-st.markdown("---")
-
-# Mostrar póster de la película seleccionada
-st.subheader("🎥 Película Seleccionada")
+# === Mostrar póster de la película seleccionada (si existe) ===
+st.subheader("🎥 Película seleccionada")
+st.markdown(f"**Movie ID:** {selected_id}")
 poster_path = f"posters/{selected_id}.jpg"
+if os.path.exists(poster_path):
+    st.image(Image.open(poster_path), width=250)
+else:
+    st.warning("📭 Póster de esta película no encontrado en posters_test/")
 
-col1, col2 = st.columns([1, 3])
-with col1:
-    if os.path.exists(poster_path):
-        st.image(Image.open(poster_path), caption=selected_title, use_column_width=True)
-    else:
-        st.warning("📭 Póster no disponible.")
-
-with col2:
-    st.markdown(f"**🎬 Título:** {selected_title}")
-    st.markdown(f"**🆔 ID:** `{selected_id}`")
-
-st.markdown("---")
-st.subheader("🍿 Recomendaciones Visuales")
-
-# Obtener y mostrar recomendaciones
+# === Obtener recomendaciones ===
+st.subheader("🍿 Películas Recomendadas")
 recomendaciones = df[df['query_movie_id'] == selected_id].sort_values('position')
-cols = st.columns(5)
 
+cols = st.columns(5)
 for idx, (_, row) in enumerate(recomendaciones.iterrows()):
     col = cols[idx % 5]
     with col:
@@ -58,8 +42,9 @@ for idx, (_, row) in enumerate(recomendaciones.iterrows()):
         poster_rec_path = f"posters/{rec_id}.jpg"
 
         if os.path.exists(poster_rec_path):
-            col.image(Image.open(poster_rec_path), use_column_width=True)
+            col.image(Image.open(poster_rec_path), width=120)
         else:
             col.caption("📭 Sin póster")
+        
         col.markdown(f"**{rec_title}**")
         col.caption(f"🎭 {rec_genre}")
