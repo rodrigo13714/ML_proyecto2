@@ -10,4 +10,3 @@ posters_test/               # Carpeta con pósters para pruebas
 Recomendaciones_Limpio.csv  # Dataset limpio con 29,231 filas de recomendaciones
 app.py                      # Código principal de la app en Streamlit
 requirements.txt            # Dependencias necesarias para ejecutar la app
-README.md                   # Este archivo
