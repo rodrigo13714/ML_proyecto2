@@ -22,7 +22,7 @@ selected_id = st.selectbox("Selecciona una película por ID:", peliculas_unicas)
 # === Mostrar póster de la película seleccionada (si existe) ===
 st.subheader("🎥 Película seleccionada")
 st.markdown(f"**Movie ID:** {selected_id}")
-poster_path = f"posters/{selected_id}.jpg"
+poster_path = f"posters_test/{selected_id}.jpg"
 if os.path.exists(poster_path):
     st.image(Image.open(poster_path), width=250)
 else:
